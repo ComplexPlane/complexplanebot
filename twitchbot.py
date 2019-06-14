@@ -345,7 +345,7 @@ class Bot:
 
         # TODO replace with hashmap if it gets too big
         if (cmd in ['bot', 'help'] and channel == MY_CHANNEL) or cmd == 'complexplanebot':
-            send_msg('I am a Twitch bot written in Python 3 by ComplexPlane. Usage: https://git.io/fjOV8')
+            send_msg('I am a Twitch bot written in Python 3 by ComplexPlane. Usage: https://git.io/fj2gV')
 
         elif cmd == 'wr':
             self.handle_commands(user, channel, '!1st')
