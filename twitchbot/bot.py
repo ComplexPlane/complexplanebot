@@ -1,5 +1,5 @@
 import collections
-import datetime
+import time
 import re
 import socket
 import ssl
@@ -14,13 +14,10 @@ from .exn import NetworkError, GetError
 
 """
 TODO:
-- timers (stay hydrated? speedrun.com up check? social?)
 - ties
-- Periodic reminders of bot's existence
-- Declarative commands and permissions?
-- Separate secret into secret folder, then gitignore
-- Periodic social links, with one message per link per second
-- Refactor into separate files
+- Separate bot backend for Discord and Twitch, with core of same commands?
+- quotes
+- parallel channel join
 """
 
 
@@ -34,6 +31,9 @@ MY_CHANNEL = 'complexplane'
 FRIEND_CHANNELS = {BOT_NAME, 'alist_', 'stevencw_', 'petresinc'}
 
 
+Timer = collections.namedtuple('Timer', ['interval', 'func'])
+
+
 class Bot:
     def __init__(self):
         self.raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,11 +43,11 @@ class Bot:
 
         self.recv_queue = collections.deque()
         self.timer_pqueue = []
-
         # How many times has each user tried to timeout someone else?
         self.user_timeouts = collections.defaultdict(int)
-
         self.joined_channels = set()
+
+        self.init_timers()
 
 
     def loop(self):
@@ -103,6 +103,32 @@ class Bot:
                     print(trace)
                     irc_trace = trace.replace('\n', ' ')
                     self.send_msg(channel, f'Oops!! {irc_trace}')
+
+
+    def init_timers(self):
+        def social():
+            self.handle_commands(BOT_NAME, MY_CHANNEL, '!social')
+        def bot():
+            self.handle_commands(BOT_NAME, MY_CHANNEL, '!bot')
+        def src():
+            self.handle_commands(BOT_NAME, MY_CHANNEL, '!issrcdown')
+
+        self.add_timer_interval(90 * 60, social)
+        self.add_timer_interval(80 * 60, bot)
+        self.add_timer_interval(50 * 60, src)
+
+
+    def add_timer_oneshot(self, t, func):
+        due_time = time.time() + t
+        heapq.heappush(self.timer_pqueue, Timer(due_time, func))
+
+
+    def add_timer_interval(self, t, func):
+        def readd():
+            func()
+            self.add_timer_oneshot(t, readd)
+
+        self.add_timer_oneshot(t, readd)
 
 
     def handle_timers(self):
@@ -207,14 +233,12 @@ class Bot:
             self.handle_commands(user, channel, '!1st')
 
         elif cmd in ['social', 'links'] and channel == MY_CHANNEL:
-            send_msg(
-                'Twitter: https://twitter.com/ComplexPlaneRun   '
-                'Discord: https://discord.gg/nJWndP5   '
-                'Youtube: https://bit.ly/2GbXGlD   '
-                'Speedrun.com: https://bit.ly/2NSTbCI   '
-                'Monkey Ball Community Discord: https://discord.gg/4TVgGkx   '
-                'Monkey Ball RTA-Focused Discord: https://discord.gg/N8N8Njc'
-            )
+            send_msg('Twitter: https://twitter.com/ComplexPlaneRun')
+            self.add_timer_oneshot(1, lambda: send_msg('Discord: https://discord.gg/nJWndP5'))
+            self.add_timer_oneshot(2, lambda: send_msg('Youtube: https://bit.ly/2GbXGlD'))
+            self.add_timer_oneshot(3, lambda: send_msg('Speedrun.com: https://bit.ly/2NSTbCI'))
+            self.add_timer_oneshot(4, lambda: send_msg('Monkey Ball Community Discord: https://discord.gg/4TVgGkx'))
+            self.add_timer_oneshot(5, lambda: send_msg('Monkey Ball RTA-Focused Discord: https://discord.gg/N8N8Njc'))
 
         elif cmd == 'schedule' and channel == MY_CHANNEL:
             send_msg("I don't have a schedule currently.")
@@ -223,10 +247,10 @@ class Bot:
             send_msg('Twitter: https://twitter.com/ComplexPlaneRun')
 
         elif cmd == 'discord' and channel == MY_CHANNEL:
-            send_msg("I might want to have a discord eventually, but I haven't thought of any good channels and stuff for it yet.")
+            send_msg('Discord: https://discord.gg/nJWndP5')
 
         elif cmd == 'src' and channel == MY_CHANNEL:
-            send_msg('Speedrun.com: https://www.speedrun.com/user/ComplexPlane')
+            send_msg('Speedrun.com: https://bit.ly/2NSTbCI')
 
         elif cmd == 'gaming' and channel == MY_CHANNEL:
             send_msg('https://clips.twitch.tv/YummyTenuousMouseCharlieBitMe')

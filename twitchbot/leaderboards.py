@@ -14,7 +14,6 @@ SMAL_URI = 'https://www.speedrun.com/api/v1/leaderboards/nd2ervd0/category/zd3l7
 
 
 RunInfo = collections.namedtuple('RunInfo', ['player', 'location', 'date', 'duration', 'place_str'])
-Timer = collections.namedtuple('Timer', ['interval', 'func'])
 
 
 def _safe_get_json(uri, valid404=False):
