@@ -28,10 +28,10 @@ SMAL_URI = 'https://www.speedrun.com/api/v1/leaderboards/nd2ervd0/category/zd3l7
 TODO:
 - timers (stay hydrated? speedrun.com up check? social?)
 - ties
-- Async
 - Periodic reminders of bot's existence
 - Declarative commands and permissions?
 - Separate secret into secret folder, then gitignore
+- Periodic social links, with one message per link per second
 """
 
 def safe_get_json(uri, valid404=False):
@@ -345,18 +345,19 @@ class Bot:
 
         # TODO replace with hashmap if it gets too big
         if (cmd in ['bot', 'help'] and channel == MY_CHANNEL) or cmd == 'complexplanebot':
-            send_msg('I am a Twitch bot written in Python 3 by ComplexPlane. Usage: https://git.io/fj2gV')
+            send_msg('I am a Twitch bot written in Python 3 by ComplexPlane. For a full list of commands: https://git.io/fj2gV')
 
         elif cmd == 'wr':
             self.handle_commands(user, channel, '!1st')
 
         elif cmd in ['social', 'links'] and channel == MY_CHANNEL:
             send_msg(
-                'Twitter: https://twitter.com/ComplexPlaneRun, '
-                'Youtube: https://www.youtube.com/channel/UC88mFCk6NkbPXFfkjzOzimQ/featured, '
-                'Monkey Ball RTA-Focused Discord: https://discord.gg/N8N8Njc, '
-                'Discord Username: ComplexPlane#3111, '
-                'Speedrun.com: https://www.speedrun.com/user/ComplexPlane'
+                'Twitter: https://twitter.com/ComplexPlaneRun   '
+                'Discord: https://discord.gg/nJWndP5   '
+                'Youtube: https://bit.ly/2GbXGlD   '
+                'Speedrun.com: https://bit.ly/2NSTbCI   '
+                'Monkey Ball Community Discord: https://discord.gg/4TVgGkx   '
+                'Monkey Ball RTA-Focused Discord: https://discord.gg/N8N8Njc'
             )
 
         elif cmd == 'schedule' and channel == MY_CHANNEL:
