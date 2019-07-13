@@ -9,12 +9,14 @@ import time
 import traceback
 import urllib
 import requests
+import heapq
 from secret import secret
 
 SERVER = 'irc.chat.twitch.tv'
 PORT = 6697
 BOT_NAME = 'complexplanebot'
 RECONNECT_TIME = 10
+SOCKET_TIMEOUT = 1
 
 MY_CHANNEL = 'complexplane'
 FRIEND_CHANNELS = {BOT_NAME, 'alist_', 'stevencw_', 'petresinc'}
@@ -33,6 +35,7 @@ TODO:
 - Separate secret into secret folder, then gitignore
 - Periodic social links, with one message per link per second
 """
+
 
 def safe_get_json(uri, valid404=False):
     try:
@@ -103,6 +106,9 @@ def rank_index_to_place(rank_index):
 
 
 RunInfo = collections.namedtuple('RunInfo', ['player', 'location', 'date', 'duration', 'place_str'])
+
+
+Timer = collections.namedtuple('Timer', ['interval', 'func'])
 
 
 def speedrun_com_run_info(run):
@@ -200,8 +206,10 @@ class Bot:
         self.raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ssl_context = ssl.create_default_context()
         self.ssock = ssl_context.wrap_socket(self.raw_sock, server_hostname=SERVER)
+        self.ssock.settimeout(SOCKET_TIMEOUT)
 
         self.recv_queue = collections.deque()
+        self.timer_pqueue = []
 
         # How many times has each user tried to timeout someone else?
         self.user_timeouts = collections.defaultdict(int)
@@ -229,34 +237,42 @@ class Bot:
 
         while True:
             msg = self.recv_raw()
+            if msg is None:
+                self.handle_timers()
 
-            ping = 'PING :'
-            if msg.startswith(ping):
-                tail = msg[len(ping):]
-                self.send_raw(f'PONG :{tail}')
-                continue
+            else:
+                ping = 'PING :'
+                if msg.startswith(ping):
+                    tail = msg[len(ping):]
+                    self.send_raw(f'PONG :{tail}')
+                    continue
 
-            chat_regex = r'^:(\w+)!(\w+)@([^ ]+) PRIVMSG #(\w+) :(.+)'
-            match = re.match(chat_regex, msg)
-            if match is None:
-                continue
+                chat_regex = r'^:(\w+)!(\w+)@([^ ]+) PRIVMSG #(\w+) :(.+)'
+                match = re.match(chat_regex, msg)
+                if match is None:
+                    continue
 
-            user, channel, message = match.group(1, 4, 5)
-            if user == BOT_NAME:
-                continue
+                user, channel, message = match.group(1, 4, 5)
+                if user == BOT_NAME:
+                    continue
 
-            try:
-                if channel == MY_CHANNEL:
-                    self.handle_porter(user, channel, message)
-                self.handle_commands(user, channel, message)
+                try:
+                    if channel == MY_CHANNEL:
+                        self.handle_porter(user, channel, message)
+                    self.handle_commands(user, channel, message)
 
-            except GetError as e:
-                self.send_msg(channel, e.msg)
-            except Exception as e:
-                trace = traceback.format_exc()
-                print(trace)
-                irc_trace = trace.replace('\n', ' ')
-                self.send_msg(channel, f'Oops!! {irc_trace}')
+                except GetError as e:
+                    self.send_msg(channel, e.msg)
+                except Exception as e:
+                    trace = traceback.format_exc()
+                    print(trace)
+                    irc_trace = trace.replace('\n', ' ')
+                    self.send_msg(channel, f'Oops!! {irc_trace}')
+
+    def handle_timers(self):
+        while len(self.timer_pqueue) > 0 and self.timer_pqueue[0][0] <= time.time():
+            _, task_func = heapq.heappop(self.timer_pqueue)
+            task_func()
 
     def handle_porter(self, user, channel, message):
         porter_references = [
@@ -479,6 +495,9 @@ class Bot:
                         print(f'Received:  {"*" * len(line)}')
                     else:
                         print(f'Received:  {line}')
+
+            except socket.timeout:
+                return None
 
             except Exception as e:
                 raise NetworkError('Error during receive attempt', e)
