@@ -1,4 +1,4 @@
-![bot profile small](https://i.imgur.com/B1tUfrN.png)
+![bot profile small](/doc/bot-profile-circle-small.png)
 
 # ComplexPlaneBot
 
