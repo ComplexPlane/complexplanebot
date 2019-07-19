@@ -23,7 +23,7 @@ reside in your chat and only respond to the commands marked *shared*.
 | `!alisters` | Get a link to the Alister's Discord, where many cool monkey ballers hang out | No |
 | `!5th`   | Get a rank from the SMB2 SMAL leaderboards (any rank works) | Yes |
 | `!wr` | The same as `!1st` | Yes |
-| `!rank petresinc` | Get the SMB2 SMAL PB and rank of a speedrun.com player | Yes |
+| `!rank petresinc` or `!pb petresinc` | Get the SMB2 SMAL PB and rank of a speedrun.com player | Yes |
 | `!latest` | Get the latest SMB2 SMAL run on the leaderboards | Yes |
 | `!issrcdown` | Is speedrun.com down again? | Yes |
 | `!pausing` | Pause strats explanation | Yes |

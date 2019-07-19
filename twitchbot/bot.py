@@ -28,7 +28,7 @@ RECONNECT_TIME = 10
 SOCKET_TIMEOUT = 1
 
 MY_CHANNEL = 'complexplane'
-FRIEND_CHANNELS = {BOT_NAME, 'alist_', 'stevencw_', 'petresinc'}
+FRIEND_CHANNELS = {BOT_NAME, 'alist_', 'stevencw_', 'petresinc', 'monkeyballspeedruns'}
 
 
 Timer = collections.namedtuple('Timer', ['interval', 'func'])
@@ -258,7 +258,7 @@ class Bot:
         elif cmd == 'slideintodms' and channel == MY_CHANNEL:
             send_msg(f'/w {user} heyyy ;)')
 
-        elif cmd == 'rank':
+        elif cmd in ['rank', 'pb']:
             send_msg(leaderboards_user_lookup(args))
 
         elif cmd == 'latest':
