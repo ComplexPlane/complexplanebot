@@ -18,13 +18,14 @@ TODO:
 - Separate bot backend for Discord and Twitch, with core of same commands?
 - quotes
 - parallel channel join
+- Fix spontaneous infinite loop bug
 """
 
 
 SERVER = 'irc.chat.twitch.tv'
 PORT = 6697
 BOT_NAME = 'complexplanebot'
-RECONNECT_TIME = 10
+RECONNECT_TIME = 5
 SOCKET_TIMEOUT = 1
 
 MY_CHANNEL = 'complexplane'
@@ -36,28 +37,25 @@ Timer = collections.namedtuple('Timer', ['interval', 'func'])
 
 class Bot:
     def __init__(self):
-        self.raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ssl_context = ssl.create_default_context()
-        self.ssock = ssl_context.wrap_socket(self.raw_sock, server_hostname=SERVER)
-        self.ssock.settimeout(SOCKET_TIMEOUT)
-
+        self.ssock = None
+        self.joined_channels = None
         self.recv_queue = collections.deque()
         self.timer_pqueue = []
         # How many times has each user tried to timeout someone else?
         self.user_timeouts = collections.defaultdict(int)
-        self.joined_channels = set()
-
         self.init_timers()
 
 
     def loop(self):
         while True:
             try:
+                self.connect()
                 self.provide_chatbot()
 
             except NetworkError as e:
                 print(f'Network error: {e.msg}')
                 print(e.exn)
+                self.ssock.close()
 
                 print(f'Reconnecting in {RECONNECT_TIME} seconds')
                 time.sleep(RECONNECT_TIME)
@@ -68,8 +66,6 @@ class Bot:
 
 
     def provide_chatbot(self):
-        self.connect()
-
         while True:
             msg = self.recv_raw()
             if msg is None:
@@ -306,6 +302,11 @@ class Bot:
 
     def connect(self):
         try:
+            raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            ssl_context = ssl.create_default_context()
+            self.ssock = ssl_context.wrap_socket(raw_sock, server_hostname=SERVER)
+            self.ssock.settimeout(SOCKET_TIMEOUT)
+
             # Login to the server
             print(f'Logging into {SERVER}:{PORT}')
             self.ssock.connect((SERVER, PORT))
@@ -313,6 +314,7 @@ class Bot:
             self.send_raw(f'PASS {secret.CLIENT_TOKEN}', hide=True)
             self.send_raw(f'NICK {BOT_NAME}')
 
+            self.joined_channels = set()
             self.join_channel(MY_CHANNEL)
             for friend in FRIEND_CHANNELS:
                 self.join_channel(friend)
@@ -358,6 +360,9 @@ class Bot:
         if len(self.recv_queue) == 0:
             try:
                 received = self.ssock.recv(2040).decode('UTF-8').strip().split('\n')
+                if received == '':
+                    raise NetworkError('Connection closed', None)
+
                 self.recv_queue.extend(received)
                 for line in received:
                     if hide:
