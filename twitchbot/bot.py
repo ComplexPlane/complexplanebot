@@ -25,12 +25,17 @@ TODO:
 SERVER = 'irc.chat.twitch.tv'
 PORT = 6697
 BOT_NAME = 'complexplanebot'
+
 RECONNECT_TIME = 5
 SOCKET_TIMEOUT = 1
+PINGPONG_INTERVAL = 60
+PINGPONG_TIMEOUT = 5
 
 MY_CHANNEL = 'complexplane'
 FRIEND_CHANNELS = {BOT_NAME, 'alist_', 'stevencw_', 'petresinc', 'monkeyballspeedruns'}
 
+PING_MSG = 'PING :tmi.twitch.tv'
+PONG_MSG = 'PONG :tmi.twitch.tv'
 
 Timer = collections.namedtuple('Timer', ['interval', 'func'])
 
@@ -39,6 +44,7 @@ class Bot:
     def __init__(self):
         self.ssock = None
         self.joined_channels = None
+        self.ping_pending = False
         self.recv_queue = collections.deque()
         self.timer_pqueue = []
         # How many times has each user tried to timeout someone else?
@@ -54,7 +60,8 @@ class Bot:
 
             except NetworkError as e:
                 print(f'Network error: {e.msg}')
-                print(e.exn)
+                if e.exn is not None:
+                    print(e.exn)
                 self.ssock.close()
 
                 print(f'Reconnecting in {RECONNECT_TIME} seconds')
@@ -71,13 +78,13 @@ class Bot:
             if msg is None:
                 self.handle_timers()
 
-            else:
-                ping = 'PING :'
-                if msg.startswith(ping):
-                    tail = msg[len(ping):]
-                    self.send_raw(f'PONG :{tail}')
-                    continue
+            elif msg == PING_MSG:
+                self.send_raw(PONG_MSG)
 
+            elif msg == PONG_MSG:
+                self.ping_pending = False
+
+            else:
                 chat_regex = r'^:(\w+)!(\w+)@([^ ]+) PRIVMSG #(\w+) :(.+)'
                 match = re.match(chat_regex, msg)
                 if match is None:
@@ -112,6 +119,18 @@ class Bot:
         self.add_timer_interval(90 * 60, social)
         self.add_timer_interval(80 * 60, bot)
         self.add_timer_interval(50 * 60, src)
+        self.add_timer_interval(PINGPONG_INTERVAL, self.ping_server)
+
+
+    def ping_server(self):
+        self.send_raw('PING')
+        self.ping_pending = True
+
+        def check_for_pong():
+            if self.ping_pending:
+                raise NetworkError('Failed to ping server, must be disconnected')
+
+        self.add_timer_oneshot(PINGPONG_TIMEOUT, check_for_pong)
 
 
     def add_timer_oneshot(self, t, func):
@@ -302,6 +321,8 @@ class Bot:
 
     def connect(self):
         try:
+            self.ping_pending = False
+
             raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             ssl_context = ssl.create_default_context()
             self.ssock = ssl_context.wrap_socket(raw_sock, server_hostname=SERVER)
@@ -361,7 +382,7 @@ class Bot:
             try:
                 received = self.ssock.recv(2040).decode('UTF-8').strip().split('\n')
                 if received == '':
-                    raise NetworkError('Connection closed', None)
+                    raise NetworkError('Connection closed')
 
                 self.recv_queue.extend(received)
                 for line in received:

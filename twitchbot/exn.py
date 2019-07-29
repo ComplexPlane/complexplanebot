@@ -1,5 +1,5 @@
 class NetworkError(Exception):
-    def __init__(self, msg, exn):
+    def __init__(self, msg, exn=None):
         self.msg = msg
         self.exn = exn
 
