@@ -18,7 +18,7 @@ TODO:
 - Separate bot backend for Discord and Twitch, with core of same commands?
 - quotes
 - parallel channel join
-- Fix spontaneous infinite loop bug
+- Check connection to server with ping/pong?
 """
 
 
