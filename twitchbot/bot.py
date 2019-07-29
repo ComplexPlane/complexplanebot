@@ -18,7 +18,6 @@ TODO:
 - Separate bot backend for Discord and Twitch, with core of same commands?
 - quotes
 - parallel channel join
-- Check connection to server with ping/pong?
 """
 
 
