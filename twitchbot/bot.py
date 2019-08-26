@@ -18,12 +18,18 @@ TODO:
 - Separate bot backend for Discord and Twitch, with core of same commands?
 - quotes
 - parallel channel join
+- Periodically choose a command at random and suggest it
+- Timer cancellation
+
+Refactoring:
+- Aggregate constants
+- Splits commands into separate function for exported and non-exported commands
 """
 
 
 SERVER = 'irc.chat.twitch.tv'
 PORT = 6697
-BOT_NAME = 'complexplanebot'
+BOT_CHANNEL = 'complexplanebot'
 
 RECONNECT_TIME = 5
 SOCKET_TIMEOUT = 1
@@ -31,10 +37,12 @@ PINGPONG_INTERVAL = 60
 PINGPONG_TIMEOUT = 5
 
 MY_CHANNEL = 'complexplane'
-FRIEND_CHANNELS = {BOT_NAME, 'alist_', 'stevencw_', 'petresinc', 'monkeyballspeedruns'}
+FRIEND_CHANNELS = {BOT_CHANNEL, 'alist_', 'stevencw_', 'petresinc', 'monkeyballspeedruns'}
 
 PING_MSG = 'PING :tmi.twitch.tv'
 PONG_MSG = 'PONG :tmi.twitch.tv'
+
+TIMEOUT_DISABLE_HOURS = 18
 
 Timer = collections.namedtuple('Timer', ['interval', 'func'])
 
@@ -44,6 +52,7 @@ class Bot:
         self.ssock = None
         self.joined_channels = None
         self.ping_pending = False
+        self.timeout_cmd_enabled = True
         self.recv_queue = collections.deque()
         self.timer_pqueue = []
         # How many times has each user tried to timeout someone else?
@@ -90,7 +99,7 @@ class Bot:
                     continue
 
                 user, channel, message = match.group(1, 4, 5)
-                if user == BOT_NAME:
+                if user == BOT_CHANNEL:
                     continue
 
                 try:
@@ -109,11 +118,11 @@ class Bot:
 
     def init_timers(self):
         def social():
-            self.handle_commands(BOT_NAME, MY_CHANNEL, '!social')
+            self.handle_commands(BOT_CHANNEL, MY_CHANNEL, '!social')
         def bot():
-            self.handle_commands(BOT_NAME, MY_CHANNEL, '!bot')
+            self.handle_commands(BOT_CHANNEL, MY_CHANNEL, '!bot')
         def src():
-            self.handle_commands(BOT_NAME, MY_CHANNEL, '!issrcdown')
+            self.handle_commands(BOT_CHANNEL, MY_CHANNEL, '!issrcdown')
 
         self.add_timer_interval(90 * 60, social)
         self.add_timer_interval(80 * 60, bot)
@@ -189,6 +198,10 @@ class Bot:
         if channel != MY_CHANNEL:
             return
 
+        if not self.timeout_cmd_enabled:
+            self.send_msg(channel, 'Free-for-all timeouts are currently disabled. Try again tomorrow.')
+            return
+
         if args == '':
             self.send_msg(channel, 'Please specify a user to timeout.')
             return
@@ -199,15 +212,15 @@ class Bot:
             return
         target_user = target_user_match.group(0)
 
-        TARGET_TIMEOUT = 5
-        USER_TIMEOUT = 30
+        OTHER_USER_TIMEOUT = 5
+        CURRENT_USER_TIMEOUT = 30
 
         if self.user_timeouts[user] % 3 == 0:
-            self.send_msg(channel, f'/timeout {target_user} {TARGET_TIMEOUT}')
-            self.send_msg(channel, f'User {target_user} timed out for {TARGET_TIMEOUT} seconds.')
+            self.send_msg(channel, f'/timeout {target_user} {OTHER_USER_TIMEOUT}')
+            self.send_msg(channel, f'{user} timed out {target_user} for {OTHER_USER_TIMEOUT} seconds.')
         else:
-            self.send_msg(channel, f'/timeout {user} {USER_TIMEOUT}')
-            self.send_msg(channel, f'User {user} timed out for {USER_TIMEOUT} seconds.')
+            self.send_msg(channel, f'/timeout {user} {CURRENT_USER_TIMEOUT}')
+            self.send_msg(channel, f'{user} timed out for {CURRENT_USER_TIMEOUT} seconds.')
 
         self.user_timeouts[user] += 1
 
@@ -304,6 +317,37 @@ class Bot:
         elif cmd == 'timeout':
             self.handle_timeout(channel, user, args)
 
+        elif cmd == 'timeoutenable' and channel == MY_CHANNEL:
+            if user != MY_CHANNEL:
+                REENABLE_TIMEOUT_TIMEOUT = 60
+                send_msg(f'/timeout {user} {REENABLE_TIMEOUT_TIMEOUT}')
+                send_msg(f'{user} timed out for {REENABLE_TIMEOUT_TIMEOUT} seconds for trying to reenable !timeout.')
+
+            elif self.timeout_cmd_enabled:
+                send_msg('!timeout is already enabled.')
+
+            else:
+                self.timeout_cmd_enabled = True
+                send_msg('!timeout has been enabled.')
+
+        elif cmd == 'timeoutdisable' and channel == MY_CHANNEL:
+            if user != MY_CHANNEL:
+                return # Silently don't work to add confusion
+
+            if not self.timeout_cmd_enabled:
+                send_msg('!timeout is already disabled.')
+
+            else:
+                self.timeout_cmd_enabled = False
+
+                def reenable_timeout():
+                    self.timeout_cmd_enabled = True
+                    send_msg(f'!timeout enabled.')
+
+                # self.add_timer_oneshot(TIMEOUT_DISABLE_HOURS * 60 * 60, reenable_timeout)
+                self.add_timer_oneshot(15, reenable_timeout)
+                send_msg(f'!timeout disabled for {TIMEOUT_DISABLE_HOURS} hours, or until reenabled.')
+
         elif cmd == 'msg':
             self.handle_msg_command(channel, user, args)
 
@@ -330,9 +374,9 @@ class Bot:
             # Login to the server
             print(f'Logging into {SERVER}:{PORT}')
             self.ssock.connect((SERVER, PORT))
-            self.send_raw(f'USER {BOT_NAME} {BOT_NAME} {BOT_NAME}')
+            self.send_raw(f'USER {BOT_CHANNEL} {BOT_CHANNEL} {BOT_CHANNEL}')
             self.send_raw(f'PASS {secret.CLIENT_TOKEN}', hide=True)
-            self.send_raw(f'NICK {BOT_NAME}')
+            self.send_raw(f'NICK {BOT_CHANNEL}')
 
             self.joined_channels = set()
             self.join_channel(MY_CHANNEL)
@@ -347,7 +391,7 @@ class Bot:
         # TODO unrelated messages are dropped; this is difficult to handle synchronously due to
         # join recursion issues
         joined_re = r'^:{}\.tmi\.twitch\.tv \d+ {} #{} :End of /NAMES list$'.format(
-            BOT_NAME, BOT_NAME, channel)
+            BOT_CHANNEL, BOT_CHANNEL, channel)
 
         if channel not in self.joined_channels:
             self.send_raw(f'JOIN #{channel}')
