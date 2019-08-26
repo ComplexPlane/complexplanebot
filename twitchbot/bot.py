@@ -24,6 +24,7 @@ TODO:
 Refactoring:
 - Aggregate constants
 - Splits commands into separate function for exported and non-exported commands
+    - Might want to do this at the same time as splitting "commands" from "complexplanebot IRC client"
 """
 
 
