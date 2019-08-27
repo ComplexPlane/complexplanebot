@@ -345,8 +345,7 @@ class Bot:
                     self.timeout_cmd_enabled = True
                     send_msg(f'!timeout enabled.')
 
-                # self.add_timer_oneshot(TIMEOUT_DISABLE_HOURS * 60 * 60, reenable_timeout)
-                self.add_timer_oneshot(15, reenable_timeout)
+                self.add_timer_oneshot(TIMEOUT_DISABLE_HOURS * 60 * 60, reenable_timeout)
                 send_msg(f'!timeout disabled for {TIMEOUT_DISABLE_HOURS} hours, or until reenabled.')
 
         elif cmd == 'msg':
