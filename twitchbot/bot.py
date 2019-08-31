@@ -123,11 +123,12 @@ class Bot:
         def bot():
             self.handle_commands(BOT_CHANNEL, MY_CHANNEL, '!bot')
         def src():
-            self.handle_commands(BOT_CHANNEL, MY_CHANNEL, '!issrcdown')
+            if not leaderboards_upcheck():
+                self.send_msg(MY_CHANNEL, 'Speedrun.com appears to be DOWN.')
 
-        self.add_timer_interval(90 * 60, social)
-        self.add_timer_interval(80 * 60, bot)
-        self.add_timer_interval(50 * 60, src)
+        self.add_timer_interval(150 * 60, social)
+        self.add_timer_interval(200 * 60, bot)
+        self.add_timer_interval(30 * 60, src)
         self.add_timer_interval(PINGPONG_INTERVAL, self.ping_server)
 
 
@@ -254,7 +255,7 @@ class Bot:
         args = args.strip()
 
         # TODO replace with hashmap if it gets too big
-        if (cmd in ['bot', 'help'] and channel == MY_CHANNEL) or cmd == 'complexplanebot':
+        if (cmd in ['bot', 'help', 'commands'] and channel == MY_CHANNEL) or cmd == 'complexplanebot':
             send_msg('I am a Twitch bot written in Python 3 by ComplexPlane. For a full list of commands: https://git.io/fj2gV')
 
         elif cmd == 'wr':
@@ -293,7 +294,10 @@ class Bot:
             send_msg(leaderboards_latest_run())
 
         elif cmd == 'issrcdown':
-            send_msg(leaderboards_upcheck())
+            if leaderboards_upcheck():
+                send_msg('Speedrun.com appears to be UP.')
+            else:
+                send_msg('Speedrun.com appears to be DOWN.')
 
         elif cmd == 'pausing':
             send_msg('Pause strats are a way to perform perfectly precise movement on a stage. In Monkey Ball, there is zero RNG; if we provide exactly the same inputs on the control stick on exactly the same frames on a level, exactly the same thing will happen. To perform a pause strat, you hold the control stick in an exact direction (thanks to the Gamecube controller\'s notches), pause on a specific frame (using the timer as a reference), and repeat.')

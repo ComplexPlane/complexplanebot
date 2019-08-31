@@ -167,6 +167,6 @@ def leaderboards_latest_run():
 def leaderboards_upcheck():
     try:
         _safe_get_json(SMAL_URI)
-        return 'speedrun.com appears to be UP.'
+        return True
     except GetError:
-        return 'speerdun.com appears to be DOWN.'
+        return False
