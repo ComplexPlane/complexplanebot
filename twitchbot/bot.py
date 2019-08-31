@@ -92,6 +92,7 @@ class Bot:
 
             elif msg == PONG_MSG:
                 self.ping_pending = False
+        self.add_timer_interval(3, src)
 
             else:
                 chat_regex = r'^:(\w+)!(\w+)@([^ ]+) PRIVMSG #(\w+) :(.+)'
@@ -322,7 +323,7 @@ class Bot:
         elif cmd == 'timeout':
             self.handle_timeout(channel, user, args)
 
-        elif cmd == 'timeoutenable' and channel == MY_CHANNEL:
+        elif cmd == 'disabletimeout' and channel == MY_CHANNEL:
             if user != MY_CHANNEL:
                 REENABLE_TIMEOUT_TIMEOUT = 60
                 send_msg(f'/timeout {user} {REENABLE_TIMEOUT_TIMEOUT}')
@@ -335,7 +336,7 @@ class Bot:
                 self.timeout_cmd_enabled = True
                 send_msg('!timeout has been enabled.')
 
-        elif cmd == 'timeoutdisable' and channel == MY_CHANNEL:
+        elif cmd == 'enabletimeout' and channel == MY_CHANNEL:
             if user != MY_CHANNEL:
                 return # Silently don't work to add confusion
 
