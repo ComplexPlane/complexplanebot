@@ -352,8 +352,11 @@ class Bot:
                 self.add_timer_oneshot(TIMEOUT_DISABLE_HOURS * 60 * 60, reenable_timeout)
                 send_msg(f'!timeout disabled for {TIMEOUT_DISABLE_HOURS} hours, or until reenabled.')
 
-        elif cmd == 'msg':
+        elif cmd == 'msg' and channel == MY_CHANNEL:
             self.handle_msg_command(channel, user, args)
+
+        elif cmd == 'bounty' and channel == MY_CHANNEL:
+            send_msg('Gonquai and Jcool have posed a bounty for finding a debug menu in Super Monkey Ball Adventure! https://bit.ly/2lRubOu')
 
         elif channel == MY_CHANNEL and cmd == 'surgery':
             send_msg('https://www.youtube.com/watch?v=DywNCzt_ky8')
