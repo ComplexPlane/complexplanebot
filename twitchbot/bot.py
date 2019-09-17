@@ -1,6 +1,3 @@
-import collections
-import time
-import re
 import socket
 import ssl
 import time
@@ -10,7 +7,6 @@ import heapq
 from .secret import secret
 from .leaderboards import *
 from .exn import NetworkError, GetError
-
 
 """
 TODO:
@@ -26,7 +22,6 @@ Refactoring:
 - Splits commands into separate function for exported and non-exported commands
     - Might want to do this at the same time as splitting "commands" from "complexplanebot IRC client"
 """
-
 
 SERVER = 'irc.chat.twitch.tv'
 PORT = 6697
@@ -60,7 +55,6 @@ class Bot:
         self.user_timeouts = collections.defaultdict(int)
         self.init_timers()
 
-
     def loop(self):
         while True:
             try:
@@ -79,7 +73,6 @@ class Bot:
             except Exception as e:
                 print(e)
                 # Continue trying to function until I see the log...
-
 
     def provide_chatbot(self):
         while True:
@@ -116,12 +109,13 @@ class Bot:
                     irc_trace = trace.replace('\n', ' ')
                     self.send_msg(channel, f'Oops!! {irc_trace}')
 
-
     def init_timers(self):
         def social():
             self.handle_commands(BOT_CHANNEL, MY_CHANNEL, '!social')
+
         def bot():
             self.handle_commands(BOT_CHANNEL, MY_CHANNEL, '!bot')
+
         def src():
             if not leaderboards_upcheck():
                 self.send_msg(MY_CHANNEL, 'Speedrun.com appears to be DOWN.')
@@ -130,7 +124,6 @@ class Bot:
         self.add_timer_interval(200 * 60, bot)
         self.add_timer_interval(30 * 60, src)
         self.add_timer_interval(PINGPONG_INTERVAL, self.ping_server)
-
 
     def ping_server(self):
         self.send_raw('PING')
@@ -142,11 +135,9 @@ class Bot:
 
         self.add_timer_oneshot(PINGPONG_TIMEOUT, check_for_pong)
 
-
     def add_timer_oneshot(self, t, func):
         due_time = time.time() + t
         heapq.heappush(self.timer_pqueue, Timer(due_time, func))
-
 
     def add_timer_interval(self, t, func):
         def readd():
@@ -155,12 +146,10 @@ class Bot:
 
         self.add_timer_oneshot(t, readd)
 
-
     def handle_timers(self):
         while len(self.timer_pqueue) > 0 and self.timer_pqueue[0][0] <= time.time():
             _, task_func = heapq.heappop(self.timer_pqueue)
             task_func()
-
 
     def handle_porter(self, user, channel, message):
         porter_references = [
@@ -195,7 +184,6 @@ class Bot:
         if re.match(phrases_re, message.lower()):
             self.send_msg(channel, '【=◈︿◈=】')
 
-
     def handle_timeout(self, channel, user, args):
         if channel != MY_CHANNEL:
             return
@@ -226,14 +214,14 @@ class Bot:
 
         self.user_timeouts[user] += 1
 
-
     def handle_msg_command(self, channel, user, args):
         if channel != MY_CHANNEL:
             return
 
         parsed = re.match(r'^(\w+) +(.*)$', args)
         if parsed is None:
-            self.send_msg(channel, f'Usage example to send a message to someone else\'s stream: !msg alist_ Yo Alist, get over here')
+            self.send_msg(channel,
+                          f'Usage example to send a message to someone else\'s stream: !msg alist_ Yo Alist, get over here')
             return
 
         target_channel, msg = parsed.group(1, 2)
@@ -241,7 +229,6 @@ class Bot:
         self.join_channel(target_channel)
         self.send_msg(target_channel, f'{user} says: {msg}')
         self.send_msg(channel, 'Message sent.')
-
 
     def handle_commands(self, user, channel, message):
         def send_msg(msg):
@@ -256,7 +243,8 @@ class Bot:
 
         # TODO replace with hashmap if it gets too big
         if (cmd in ['bot', 'help', 'commands'] and channel == MY_CHANNEL) or cmd == 'complexplanebot':
-            send_msg('I am a Twitch bot written in Python 3 by ComplexPlane. For a full list of commands: https://git.io/fj2gV')
+            send_msg(
+                'I am a Twitch bot written in Python 3 by ComplexPlane. For a full list of commands: https://git.io/fj2gV')
 
         elif cmd == 'wr':
             self.handle_commands(user, channel, '!1st')
@@ -300,24 +288,30 @@ class Bot:
                 send_msg('Speedrun.com appears to be DOWN.')
 
         elif cmd == 'pausing':
-            send_msg('Pause strats are a way to perform perfectly precise movement on a stage. In Monkey Ball, there is zero RNG; if we provide exactly the same inputs on the control stick on exactly the same frames on a level, exactly the same thing will happen. To perform a pause strat, you hold the control stick in an exact direction (thanks to the Gamecube controller\'s notches), pause on a specific frame (using the timer as a reference), and repeat.')
+            send_msg(
+                'Pause strats are a way to perform perfectly precise movement on a stage. In Monkey Ball, there is zero RNG; if we provide exactly the same inputs on the control stick on exactly the same frames on a level, exactly the same thing will happen. To perform a pause strat, you hold the control stick in an exact direction (thanks to the Gamecube controller\'s notches), pause on a specific frame (using the timer as a reference), and repeat.')
 
-            send_msg('Often we will pause slightly before the intended frame and then press B quickly followed by Pause to advance a small number of frames until the desired frame is reached. Pausing quickly and frame-perfectly is tricky to do consistently, so many pause strats include "backup frames" as well.')
+            send_msg(
+                'Often we will pause slightly before the intended frame and then press B quickly followed by Pause to advance a small number of frames until the desired frame is reached. Pausing quickly and frame-perfectly is tricky to do consistently, so many pause strats include "backup frames" as well.')
 
         elif cmd == 'boosting':
-            send_msg('Switching between up-left and up-right can change your momentum in certain circumstances. Boosting once at the start of a level ("frame boosting") or into angled walls ("wall boosting") can give you a speed boost. Boosting in mid-air can keep you in the air for slightly longer ("air boosting").')
+            send_msg(
+                'Switching between up-left and up-right can change your momentum in certain circumstances. Boosting once at the start of a level ("frame boosting") or into angled walls ("wall boosting") can give you a speed boost. Boosting in mid-air can keep you in the air for slightly longer ("air boosting").')
 
         elif cmd == 'firstframe':
-            send_msg('The game does not consider the stage completed until the third frame after breaking the goaltape. Leaving the stage with "Stage Select" on the first two frames results in a "first frame".')
+            send_msg(
+                'The game does not consider the stage completed until the third frame after breaking the goaltape. Leaving the stage with "Stage Select" on the first two frames results in a "first frame".')
 
         elif cmd == 'walls':
-            send_msg('For many kinds of walls, wall boosting gives an inconsistent amount of speed. Sometimes you can smoothly roll off of them, sometimes you can just bonk and gain less speed. This inconsistency can make certain strats not RTA-viable.')
+            send_msg(
+                'For many kinds of walls, wall boosting gives an inconsistent amount of speed. Sometimes you can smoothly roll off of them, sometimes you can just bonk and gain less speed. This inconsistency can make certain strats not RTA-viable.')
 
         elif cmd == 'alisters':
             send_msg('Alisters Discord: https://discord.gg/N8N8Njc')
 
         elif cmd == 'smh' and channel == MY_CHANNEL:
-            send_msg(f'Hi, my name is {user} and you should follow me at twitch.tv/{user}  I\'m an epic speedrunner and MUCH better than this lowly gamer!!')
+            send_msg(
+                f'Hi, my name is {user} and you should follow me at twitch.tv/{user}  I\'m an epic speedrunner and MUCH better than this lowly gamer!!')
 
         elif cmd == 'timeout':
             self.handle_timeout(channel, user, args)
@@ -337,7 +331,7 @@ class Bot:
 
         elif cmd == 'disabletimeout' and channel == MY_CHANNEL:
             if user != MY_CHANNEL:
-                return # Silently don't work to add confusion
+                return  # Silently don't work to add confusion
 
             if not self.timeout_cmd_enabled:
                 send_msg('!timeout is already disabled.')
@@ -356,7 +350,8 @@ class Bot:
             self.handle_msg_command(channel, user, args)
 
         elif cmd == 'bounty' and channel == MY_CHANNEL:
-            send_msg('Gonquai and Jcool have posed a bounty for finding a debug menu in Super Monkey Ball Adventure! https://bit.ly/2lRubOu')
+            send_msg(
+                'Gonquai and Jcool have posed a bounty for finding a debug menu in Super Monkey Ball Adventure! https://bit.ly/2lRubOu')
 
         elif channel == MY_CHANNEL and cmd == 'surgery':
             send_msg('https://www.youtube.com/watch?v=DywNCzt_ky8')
@@ -367,7 +362,6 @@ class Bot:
                 send_msg(leaderboards_msg)
             elif channel == MY_CHANNEL:
                 send_msg(f'!{cmd}: unrecognized command :(')
-
 
     def connect(self):
         try:
@@ -393,7 +387,6 @@ class Bot:
         except Exception as e:
             raise NetworkError(f'Error connecting to {SERVER}:{PORT}', e)
 
-
     def join_channel(self, channel):
         # TODO unrelated messages are dropped; this is difficult to handle synchronously due to
         # join recursion issues
@@ -407,14 +400,13 @@ class Bot:
 
             self.joined_channels.add(channel)
 
-
     """ Send a message to the channel """
+
     def send_msg(self, channel, msg):
         MAX_LEN = 500
         if len(msg) > MAX_LEN:
             msg = msg[:MAX_LEN - 3] + '...'
         self.send_raw(f'PRIVMSG #{channel} :{msg}')
-
 
     def send_raw(self, msg, hide=False):
         try:
@@ -425,7 +417,6 @@ class Bot:
 
         except Exception as e:
             raise NetworkError(f'Error sending message {msg}', e)
-
 
     def recv_raw(self, hide=False):
         if len(self.recv_queue) == 0:

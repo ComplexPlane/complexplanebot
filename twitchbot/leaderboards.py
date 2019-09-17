@@ -6,12 +6,10 @@ import re
 
 from .exn import GetError
 
-
 # URI for the Story Mode All Levels (NTSC) leaderboard
 SMAL_VAR = 'wl3vv981'
 SMAL_VAL = '5q8kgmyq'
 SMAL_URI = 'https://www.speedrun.com/api/v1/leaderboards/nd2ervd0/category/zd3l7ydn?var-wl3vv981=5q8kgmyq'
-
 
 RunInfo = collections.namedtuple('RunInfo', ['player', 'location', 'date', 'duration', 'place_str'])
 
@@ -98,7 +96,8 @@ def _speedrun_com_run_info(run):
     if time_str.startswith('0:'):
         time_str = time_str[2:]
 
-    return RunInfo(player=player_name, location=player_location, date=date_recorded, duration=time_str, place_str=place_str)
+    return RunInfo(player=player_name, location=player_location, date=date_recorded, duration=time_str,
+                   place_str=place_str)
 
 
 def leaderboards_rank_lookup(cmd):
