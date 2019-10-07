@@ -16,6 +16,7 @@ TODO:
 - parallel channel join
 - Periodically choose a command at random and suggest it
 - Timer cancellation
+- Rewrite in Rust lol
 
 Refactoring:
 - Aggregate constants
@@ -421,12 +422,14 @@ class Bot:
     def recv_raw(self, hide=False):
         if len(self.recv_queue) == 0:
             try:
-                received = self.ssock.recv(2040).decode('UTF-8').strip().split('\n')
-                if received == '':
+                received_str = self.ssock.recv(2040).decode('UTF-8').strip()
+                if received_str == '':
                     raise NetworkError('Connection closed')
 
-                self.recv_queue.extend(received)
-                for line in received:
+                received_lines = received_str.split('\n')
+                self.recv_queue.extend(received_lines)
+
+                for line in received_lines:
                     if hide:
                         print(f'Received:  {"*" * len(line)}')
                     else:
