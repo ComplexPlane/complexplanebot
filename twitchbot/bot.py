@@ -247,7 +247,7 @@ class Bot:
             send_msg(
                 'I am a Twitch bot written in Python 3 by ComplexPlane. For a full list of commands: https://git.io/fj2gV')
 
-        elif cmd == 'wr':
+        elif cmd == 'wr' and channel == MY_CHANNEL:
             self.handle_commands(user, channel, '!1st')
 
         elif cmd in ['social', 'links'] and channel == MY_CHANNEL:
