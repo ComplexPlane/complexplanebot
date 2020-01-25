@@ -78,7 +78,14 @@ def _rank_index_to_place(rank_index):
 def _speedrun_com_run_info(run):
     player_uri = run['run']['players'][0]['uri']
     player_json = _safe_get_json(player_uri)
-    player_name = player_json['data']['names']['international']
+
+    try:
+        player_name = player_json['data']['names']['international']
+    except (KeyError, TypeError):
+        try:
+            player_name = player_json['data']['name']
+        except (KeyError, TypeError):
+            player_name = '(unknown player name)'
 
     try:
         player_location = player_json['data']['location']['region']['names']['international']
@@ -86,9 +93,11 @@ def _speedrun_com_run_info(run):
         try:
             player_location = player_json['data']['location']['country']['names']['international']
         except (KeyError, TypeError):
-            player_location = 'unknown location'
+            player_location = '(unknown location)'
 
     date_recorded = run['run']['date']
+    if date_recorded is None:
+        date_recorded = '(unknown date)'
     place_str = _rank_index_to_place(run['place'] - 1)
 
     time_sec = run['run']['times']['primary_t']
@@ -96,8 +105,13 @@ def _speedrun_com_run_info(run):
     if time_str.startswith('0:'):
         time_str = time_str[2:]
 
-    return RunInfo(player=player_name, location=player_location, date=date_recorded, duration=time_str,
-                   place_str=place_str)
+    return RunInfo(
+        player=player_name,
+        date=date_recorded,
+        duration=time_str,
+        place_str=place_str,
+        location=player_location,
+    )
 
 
 def leaderboards_rank_lookup(cmd):
