@@ -23,56 +23,55 @@ def _safe_get_json(uri, valid404=False):
         return response.json()
     except requests.exceptions.RequestException:
         site = urllib.parse.urlparse(uri).netloc
-        raise GetError(f'Failed to communicate with {site}, is it down?')
+        raise GetError(f'Failed to fetch info from speedrun.com. Rate-limiting is likely in effect. Please try again later.')
 
 
-def _place_to_rank_index(place):
-    rank_regex = '^([0-9]+)([a-zA-Z]+)$'
-    match = re.match(rank_regex, place)
+def _decode_place(place):
+    place_regex = '^([0-9]+)([a-zA-Z]+)$'
+    match = re.match(place_regex, place)
     if match is None:
         return None
 
-    rank = int(match.group(1))
+    place = int(match.group(1))
     suffix = match.group(2)
-    if rank == 0:
+    if place == 0:
         return None
 
-    if rank % 10 == 1 and rank != 11:
+    if place % 10 == 1 and place != 11:
         if suffix != 'st':
             return None
-    elif rank % 10 == 2 and rank != 12:
+    elif place % 10 == 2 and place != 12:
         if suffix != 'nd':
             return None
-    elif rank % 10 == 3 and rank != 13:
+    elif place % 10 == 3 and place != 13:
         if suffix != 'rd':
             return None
     elif suffix != 'th':
         return None
 
-    return rank - 1
+    return place
 
 
-def _rank_index_to_place(rank_index):
-    rank = rank_index + 1
-    if rank < 1:
+def _encode_place(place):
+    if place < 1:
         return None
 
-    if rank % 10 == 1:
-        if rank == 11:
-            return f'{rank}th'
-        return f'{rank}st'
+    if place % 10 == 1:
+        if place == 11:
+            return f'{place}th'
+        return f'{place}st'
 
-    if rank % 10 == 2:
-        if rank == 12:
-            return f'{rank}th'
-        return f'{rank}nd'
+    if place % 10 == 2:
+        if place == 12:
+            return f'{place}th'
+        return f'{place}nd'
 
-    if rank % 10 == 3:
-        if rank == 13:
-            return f'{rank}th'
-        return f'{rank}rd'
+    if place % 10 == 3:
+        if place == 13:
+            return f'{place}th'
+        return f'{place}rd'
 
-    return f'{rank}th'
+    return f'{place}th'
 
 
 def _speedrun_com_run_info(run):
@@ -98,7 +97,7 @@ def _speedrun_com_run_info(run):
     date_recorded = run['run']['date']
     if date_recorded is None:
         date_recorded = '(unknown date)'
-    place_str = _rank_index_to_place(run['place'] - 1)
+    place_str = _encode_place(run['place'])
 
     time_sec = run['run']['times']['primary_t']
     time_str = str(datetime.timedelta(seconds=time_sec))
@@ -114,27 +113,39 @@ def _speedrun_com_run_info(run):
     )
 
 
-def leaderboards_rank_lookup(cmd):
-    rank_index = _place_to_rank_index(cmd)
-    if rank_index is None:
+def leaderboards_rank_lookup(place_str):
+    place = _decode_place(place_str)
+    if place is None:
         return None
 
     smal_json = _safe_get_json(SMAL_URI)
+    runs_in_place = list(filter(lambda run: run['place'] == place, smal_json['data']['runs']))
+    run_infos = list(map(_speedrun_com_run_info, runs_in_place))
 
-    runs = smal_json['data']['runs']
-    place = _rank_index_to_place(rank_index)
-    if len(runs) - 1 < rank_index:
-        return f'Sorry, there is nobody in {place} place.'
-    run = runs[rank_index]
+    place_str_normalized = _encode_place(place)
 
-    run_info = _speedrun_com_run_info(run)
-
-    if rank_index == 0:
-        place_text = 'world record'
+    if place == 1:
+        place_text = 'The world record'
     else:
-        place_text = f'{place} place record'
+        place_text = f'{place_str_normalized} place'
 
-    return f'The {place_text} for Super Monkey Ball 2: Story Mode All Levels is {run_info.duration} by {run_info.player}, set on {run_info.date}. {run_info.player} is from {run_info.location}.'
+    if len(runs_in_place) == 0:
+        return f'Sorry, there is nobody in {place_str_normalized} place.'
+
+    if len(runs_in_place) == 1:
+        run_info = run_infos[0]
+
+        return f'{place_text} for Super Monkey Ball 2: Story Mode All Levels is {run_info.duration} by {run_info.player}, set on {run_info.date}. {run_info.player} is from {run_info.location}.'
+
+    # There is a tie
+
+    names_list = list(map(lambda run: run.player, run_infos))
+    if len(run_infos) == 2:
+        names_str = f'{names_list[0]} and {names_list[1]}'
+    else:
+        names_str = ', '.join(names_list[:-1]) + f'and {names_list[-1]}'
+
+    return f'{place_text} for Super Monkey Ball 2: Story Mode All Levels is {run_infos[0].duration}, a tie between {names_str}.'
 
 
 def leaderboards_user_lookup(user):
