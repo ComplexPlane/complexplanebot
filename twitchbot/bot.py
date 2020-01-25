@@ -111,19 +111,6 @@ class Bot:
                     self.send_msg(channel, f'Oops!! {irc_trace}')
 
     def init_timers(self):
-        def social():
-            self.handle_commands(BOT_CHANNEL, MY_CHANNEL, '!social')
-
-        def bot():
-            self.handle_commands(BOT_CHANNEL, MY_CHANNEL, '!bot')
-
-        def src():
-            if not leaderboards_upcheck():
-                self.send_msg(MY_CHANNEL, 'Speedrun.com appears to be DOWN.')
-
-        self.add_timer_interval(150 * 60, social)
-        self.add_timer_interval(200 * 60, bot)
-        self.add_timer_interval(30 * 60, src)
         self.add_timer_interval(PINGPONG_INTERVAL, self.ping_server)
 
     def ping_server(self):
