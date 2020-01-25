@@ -9,7 +9,7 @@ from .exn import GetError
 # URI for the Story Mode All Levels (NTSC) leaderboard
 SMAL_VAR = 'wl3vv981'
 SMAL_VAL = '5q8kgmyq'
-SMAL_URI = 'https://www.speedrun.com/api/v1/leaderboards/nd2ervd0/category/zd3l7ydn?var-wl3vv981=5q8kgmyq'
+SMAL_URI = 'https://www.speedrun.com/api/v1/leaderboards/nd2ervd0/category/zd3l7ydn?var-wl3vv981=5q8kgmyq&emulators=false'
 
 RunInfo = collections.namedtuple('RunInfo', ['player', 'location', 'date', 'duration', 'place_str'])
 
