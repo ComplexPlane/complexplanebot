@@ -165,6 +165,7 @@ class Bot:
             'madeon',
             'anamanaguchi',
             'kero kero bonito',
+            'your wish',
         ]
 
         inner_re = '|'.join(porter_references).lower()
