@@ -338,12 +338,8 @@ class Bot:
         elif cmd == 'msg' and channel == MY_CHANNEL:
             self.handle_msg_command(channel, user, args)
 
-        # elif cmd == 'bounty' and channel == MY_CHANNEL:
-        #     send_msg(
-        #         'Gonquai and Jcool have posed a bounty for finding a debug menu in Super Monkey Ball Adventure! https://bit.ly/2lRubOu')
-
         elif cmd in ['timesave', 'timesaves'] and channel == MY_CHANNEL:
-            send_msg('https://splits.io/5a98')
+            send_msg('https://splits.io/5bdu')
 
         elif channel == MY_CHANNEL and cmd == 'surgery':
             send_msg('https://www.youtube.com/watch?v=DywNCzt_ky8')
