@@ -170,7 +170,7 @@ class Bot:
 
         inner_re = '|'.join(porter_references).lower()
         phrases_re = r'(^|\W)({})($|\W)'.format(inner_re)
-        if re.match(phrases_re, message.lower()):
+        if re.search(phrases_re, message.lower()):
             self.send_msg(channel, '【=◈︿◈=】')
 
     def handle_timeout(self, channel, user, args):
