@@ -338,11 +338,25 @@ class Bot:
         elif cmd == 'msg' and channel == MY_CHANNEL:
             self.handle_msg_command(channel, user, args)
 
-        elif cmd in ['timesave', 'timesaves'] and channel == MY_CHANNEL:
-            send_msg('https://splits.io/5bdu')
-
         elif channel == MY_CHANNEL and cmd == 'surgery':
             send_msg('https://www.youtube.com/watch?v=DywNCzt_ky8')
+
+        elif channel == MY_CHANNEL and cmd == 'peplane':
+            send_msg('On December 27, 2020, myself + PetresInc (Peplane) tied the SMAL world record with two 28:17s!')
+
+        elif channel == MY_CHANNEL and cmd in ['timesave', 'timesaves']:
+            send_msg('~6s on Spinning Top (failed 2nd frame, retry) ~0.75s on Stepping Stones (too far left before first stepping stone, speed bump, got clip) ~3s on Giant Comb (idk how I failed this) ~0.2s on Beehive (slow Alist Beehive) ~0.4s on Arthropod (went off a little early so did slow ending) ~0.5s on Seesaw Bridges (got 33.63, slow first clip and wide first turn on last seesaw)')
+            send_msg('~0.6s on Fluctuation (bad bounce pattern) ~0.2s on Punched Seesaws (too deep clip) ~1s on Folders (if I get 49 Folders) ~0.5s on Sieve (with faster pausing and faster goal entry) ~8s on Momentum (death) ~1.1s on Swing Shaft (missed frame)')
+            send_msg('~1.3s on Guillotine (slow pausing) ~0.2s on Twin Basin (too deep clip) ~2s on Corkscrew (goal bonk) ~6.3s on Gimmick (missed frame) ~0.6s on Postmodern (repause at goal) ~0.5s on Invisible (missed retry) ~0.5s on Created By (slow adjustment)')
+            
+        elif channel == MY_CHANNEL and cmd == '1080p':
+            send_msg('I\'m testing streaming at 1080p 60FPS, primarily so that local recordings are also 1080p. If you notice any frame drops, blurriness, or trouble watching the stream even at lower quality options, let me know!')
+
+        elif channel == MY_CHANNEL and cmd == 'iws':
+            send_msg('How many attempts does it take for me to complete an individual world deathless? https://docs.google.com/spreadsheets/d/1EcrM4PHhiGH3CB7R9fYjrXLgkKD1IayUMyeqPDBKBm0/edit?usp=sharing')
+
+        elif channel == MY_CHANNEL and cmd == 'tryhard':
+            send_msg('To help focus, I will be hiding splits after W1 and hiding chat after W3. Wish me luck!')
 
         else:
             leaderboards_msg = leaderboards_rank_lookup(cmd)
